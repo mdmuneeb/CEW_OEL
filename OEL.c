@@ -1,51 +1,82 @@
 #include <stdio.h>
 #include <curl/curl.h>
+#include <jansson.h>
 
-int main() {
-    CURL *curl;
-    CURLcode result;
-
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    curl = curl_easy_init();
-
-
-    char url[] = "https://api.openweathermap.org/data/2.5/weather?units=metric&q=portugal&appid=7821014de233ecf098180185706f59ca";
-
-    FILE *file;
+// Function to handle the API response
+size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
     
+    // Parse the JSON response and extract the wind speed
+    json_error_t error;
+    json_t *root = json_loadb(contents, size * nmemb, 0, &error);
 
-    if (curl) {
-        // Set the URL
-        curl_easy_setopt(curl, CURLOPT_URL, url);
+    if (root != NULL) {
 
-        file = fopen("Weather_Data.txt", "w");
+        // Appending the raw data to the Weather_Data.txt file
+        FILE *file = fopen("Weather_Data.txt", "a");
 
-        if (file == NULL)
-        {
-            printf("There is some error");
+        if (file != NULL) {
+            fwrite(contents, size, nmemb, file);
+            fclose(file);
         }
 
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, fwrite);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
+        // Checking if "wind" object exists in the JSON response
+        json_t *windObject = json_object_get(root, "wind");
 
-        // Perform the request
-        result = curl_easy_perform(curl);
+        if (windObject != NULL && json_is_object(windObject)) {
+            // Extracted wind speed
+            json_t *speed = json_object_get(windObject, "speed");
 
-        // Check for errors
-        if (result != CURLE_OK)
-            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(result));
+            if (speed != NULL && json_is_number(speed)) {
+                double windSpeed = json_number_value(speed);
 
- 
-        // Cleanup
-        curl_easy_cleanup(curl);
+                // Appending the wind speed to the Wind_Speed_Data.txt file
+                file = fopen("Wind_Speed_Data.txt", "a");
 
-        fclose(file);
+                if (file != NULL) {
+                    fprintf(file, "%.2f\n", windSpeed);
+                    fclose(file);
+                }
+            }
+        }
+
+        json_decref(root);
     }
 
+    return size * nmemb;
+}
 
+int main() {
+    // Initialize libcurl
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+
+    // Initialize a libcurl easy handle
+    CURL *curl = curl_easy_init();
+
+    // Set the API URL
+    const char *url = "https://api.openweathermap.org/data/2.5/weather?units=metric&q=karachi&appid=7821014de233ecf098180185706f59ca";
+
+    if (curl) {
+        // Set the URL to fetch
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+
+        // Set the callback function to handle the API response
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+
+        // Perform the request
+        CURLcode res = curl_easy_perform(curl);
+
+        // Check for errors
+        if (res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        }
+
+        // Clean up
+        curl_easy_cleanup(curl);
+    }
 
     // Cleanup libcurl
     curl_global_cleanup();
 
     return 0;
 }
+
