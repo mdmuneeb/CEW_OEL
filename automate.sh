@@ -4,7 +4,7 @@
 gcc -o OEL_output OEL.c -lcurl -ljansson
 
 # Seting the interval in seconds (e.g., 1 hour)
-interval=10
+interval=2
 
 # Number of times to run the loop
 num_iterations=4

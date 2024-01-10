@@ -26,6 +26,20 @@ size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
             // Extracted wind speed
             json_t *speed = json_object_get(windObject, "speed");
 
+
+            if (json_number_value(speed) > 1.0 || json_number_value(speed) < 0)
+            {
+                FILE *file;
+
+                file = fopen("Anomaly.log", "a"); 
+                
+                if (file != NULL)
+                {
+                    fprintf(file, "Extreme windspeed %.2f recorded at  Date: %s, Time: %s  \n", json_number_value(speed), __DATE__, __TIME__);
+                }
+            }
+
+
             if (speed != NULL && json_is_number(speed)) {
                 double windSpeed = json_number_value(speed);
 
