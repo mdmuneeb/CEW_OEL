@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #compiling the OEL.c file
-gcc -o OEL_output OEL.c -lcurl -ljansson
+gcc -o output OEL.c -lcurl -ljansson
 
 # Seting the interval in seconds (e.g., 1 hour)
 interval=2
@@ -16,7 +16,7 @@ counter=0
 while [ $counter -lt $num_iterations ]
 do
     #precompiled C program to fetch data and extract wind speed
-    ./OEL_output
+    ./output
 
     # Printing a timestamp (optional)
     echo "API call made at $(date)"

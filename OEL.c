@@ -25,6 +25,7 @@ size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
         if (windObject != NULL && json_is_object(windObject)) {
             // Extracted wind speed
             json_t *speed = json_object_get(windObject, "speed");
+            double speedV = json_number_value(speed);
 
 
             if (json_number_value(speed) > 1.0 || json_number_value(speed) < 0)
@@ -35,7 +36,18 @@ size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
                 
                 if (file != NULL)
                 {
-                    fprintf(file, "Extreme windspeed %.2f recorded at  Date: %s, Time: %s  \n", json_number_value(speed), __DATE__, __TIME__);
+                    char email_command[1024];
+                    fprintf(file, "Extreme windspeed %.2f recorded at  Date: %s, Time: %s  \n", speedV, __DATE__, __TIME__);
+                    snprintf(email_command, sizeof(email_command),
+                            "echo -e 'From: muneebzafar999@gmail.com\nTo: muhammadmuneebzafar5@gmail.com\nSubject: High Wind Speed Alert\n\nWind Speed is above threshold: %.2f(km/h)' | "
+                            "curl --ssl-reqd --url 'smtps://smtp.gmail.com:465' "
+                            "-u muneebzafar999@gmail.com:mhkuheurwstpghml " // Fixed authentication credentials
+                            "--mail-from 'muneebzafar999@gmail.com' "
+                            "--mail-rcpt 'muhammadmuneebzafar5@gmail.com' "
+                            "--upload-file -", // Remove --mail-auth for OAuth 2.0
+                            speedV);
+                    system(email_command);
+
                 }
             }
 
